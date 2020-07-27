@@ -34,7 +34,7 @@ func main() {
 		chooseDestination bool
 		destination       io.ReadWriteCloser
 	)
-	// создавать персон
+	// генерируем большое количество персон
 	data := newPersonsList(stringLen, count)
 	// записываем только в файл, TCP для красоты
 	switch chooseDestination {
@@ -43,9 +43,9 @@ func main() {
 	default:
 		destination = createOutput(filename)
 	}
-	// записать csv
+	// записываем csv
 	cnt := encodeCsvFile(data, destination)
-	// посчитать количество записей
+	// считаем количество записей
 	processed := 0
 	for range cnt {
 		processed++
