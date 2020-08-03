@@ -22,9 +22,9 @@ type person struct {
 }
 
 const (
-	filename          = "testData.csv"
-	stage1Workers int = 3
-	stage2Workers int = 2
+	filename                  = "testData.csv"
+	stage1WorkersQuantity int = 3
+	stage2WorkersQuantity int = 2
 )
 
 var (
@@ -47,12 +47,12 @@ var (
 //  <-chan получить
 //  chan<- отправить
 func main() {
-	jobs := make(chan person, stage1Workers)
-	stage1Result := make(chan person, stage1Workers)
-	stage2Result := make(chan person, stage2Workers)
+	jobs := make(chan person, stage1WorkersQuantity)
+	stage1Result := make(chan person, stage1WorkersQuantity)
+	stage2Result := make(chan person, stage2WorkersQuantity)
 
-	startWorkers(stage1Workers, stage1Worker, jobs, stage1Result)
-	startWorkers(stage2Workers, stage2Worker, stage1Result, stage2Result)
+	startWorkers(stage1WorkersQuantity, stage1Worker, jobs, stage1Result)
+	startWorkers(stage2WorkersQuantity, stage2Worker, stage1Result, stage2Result)
 
 	sendJobs(jobs, filename)
 
@@ -68,7 +68,7 @@ func readResult(stageResult <-chan person) chan int {
 		for p := range stageResult {
 			cnt++
 			if p.checkCode != 3 {
-				log.Fatal("Ужас! checkCode не равен 3!", p)
+				log.Fatalln("Ужас! checkCode не равен 3!", p)
 			}
 		}
 		result <- cnt
@@ -79,7 +79,7 @@ func readResult(stageResult <-chan person) chan int {
 func sendJobs(jobs chan person, filename string) {
 	file, err := os.Open(filename)
 	if err != nil {
-		log.Fatal("can't open file", filename)
+		log.Fatalln("can't open file", filename)
 	}
 
 	scanner := bufio.NewScanner(file)
