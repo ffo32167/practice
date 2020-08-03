@@ -13,7 +13,7 @@ import (
 )
 
 /* написано для практики с генераторами и пайпланами
-создаем очень большое количество информации, затем пишем в интерфейс
+создаем большое количество информации, затем пишем в интерфейс
 */
 
 type person struct {
@@ -26,7 +26,7 @@ type person struct {
 const (
 	filename  = "testData.csv"
 	stringLen = 10
-	count     = 2000 // 1 Gb = 20000000
+	count     = 20000000 // 1 Gb = 20000000
 )
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 		destination = createOutput(filename)
 	}
 	// записываем csv
-	cnt := encodeCsvFile(data, destination)
+	cnt := encodeCsv(data, destination)
 	// считаем количество записей
 	processed := 0
 	for range cnt {
@@ -105,7 +105,7 @@ func newPersonsList(stringLen, count int) (pers chan person) {
 }
 
 // сохраняет данные в csv формате
-func encodeCsvFile(personsList chan person, destination io.ReadWriteCloser) (count chan struct{}) {
+func encodeCsv(personsList chan person, destination io.ReadWriteCloser) (count chan struct{}) {
 	count = make(chan struct{})
 	w := csv.NewWriter(destination)
 	var record person
