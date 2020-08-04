@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -29,7 +30,7 @@ type person struct {
 const (
 	filename  = "testData.csv"
 	stringLen = 10
-	count     = 20000 // 1 Gb = 20000000
+	count     = 20000000 // 1 Gb = 20000000
 )
 
 func main() {
@@ -37,8 +38,10 @@ func main() {
 		chooseDestination bool
 		destination       io.ReadWriteCloser
 	)
-	// генерируем большое количество персон
-	data := newPersonsList(stringLen, count)
+	// аварийная остановка "горшочек не вари"
+	stopper := newStopper()
+	// генерируем некоторое количество персон
+	data := newPersonsList(stringLen, count, stopper)
 	// записываем только в файл, TCP для красоты
 	switch chooseDestination {
 	case true:
@@ -46,10 +49,23 @@ func main() {
 	default:
 		destination = createFile(filename)
 	}
-	// записываем csv
+	// записываем в формат csv
 	cnt := encodeCsv(data, destination)
 
 	fmt.Println("обработано", <-cnt)
+}
+
+// newStopper возвращает канал, который останавливает генератор
+func newStopper() (stopper chan struct{}) {
+	stopper = make(chan struct{})
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("нажмите Enter для остановки")
+	go func() {
+		for scanner.Scan() {
+			stopper <- struct{}{}
+		}
+	}()
+	return stopper
 }
 
 // создаёт случайную строку
@@ -91,12 +107,19 @@ func createFile(filename string) io.ReadWriteCloser {
 }
 
 // создаем список персон
-func newPersonsList(stringLen, count int) (pers chan person) {
+func newPersonsList(stringLen, count int, stopper <-chan struct{}) (pers chan person) {
 	pers = make(chan person)
 	go func() {
 		pers <- person{"Иван", "Иванов", "Москва", 105}
-		for i := 0; i < count-1; i++ {
-			pers <- newPerson(stringLen)
+		for i := 1; i < count; i++ {
+			select {
+			case <-stopper:
+				fmt.Println("остановлено пользователем")
+				close(pers)
+				return
+			default:
+				pers <- newPerson(stringLen)
+			}
 		}
 		close(pers)
 	}()
