@@ -12,6 +12,9 @@ import (
 	"strings"
 )
 
+// errorgroup
+// ctx
+
 /* написано для практики с генераторами и пайпланами
 создаем большое количество информации, затем пишем в интерфейс
 */
@@ -26,7 +29,7 @@ type person struct {
 const (
 	filename  = "testData.csv"
 	stringLen = 10
-	count     = 20000000 // 1 Gb = 20000000
+	count     = 20000 // 1 Gb = 20000000
 )
 
 func main() {
@@ -41,16 +44,12 @@ func main() {
 	case true:
 		destination = createTCPConn()
 	default:
-		destination = createOutput(filename)
+		destination = createFile(filename)
 	}
 	// записываем csv
 	cnt := encodeCsv(data, destination)
-	// считаем количество записей
-	processed := 0
-	for range cnt {
-		processed++
-	}
-	fmt.Println("обработано", processed)
+
+	fmt.Println("обработано", <-cnt)
 }
 
 // создаёт случайную строку
@@ -83,7 +82,7 @@ func createTCPConn() io.ReadWriteCloser {
 }
 
 // вывод в файл
-func createOutput(filename string) io.ReadWriteCloser {
+func createFile(filename string) io.ReadWriteCloser {
 	file, err := os.Create(filename)
 	if err != nil {
 		log.Fatal("can't reach destination: ", err)
@@ -105,23 +104,24 @@ func newPersonsList(stringLen, count int) (pers chan person) {
 }
 
 // сохраняет данные в csv формате
-func encodeCsv(personsList chan person, destination io.ReadWriteCloser) (count chan struct{}) {
-	count = make(chan struct{})
+func encodeCsv(personsList chan person, destination io.ReadWriteCloser) (count chan int) {
+	count = make(chan int)
 	w := csv.NewWriter(destination)
 	var record person
 	go func() {
+		cnt := 0
 		for record = range personsList {
 			if err := w.Write([]string{record.firstname, record.lastname, record.address, strconv.Itoa(record.checkCode)}); err != nil {
 				destination.Close()
 				log.Fatalln("error writing record to csv: ", err)
 			}
-			count <- struct{}{}
+			cnt++
 		}
+		count <- cnt
 		w.Flush()
 		if err := w.Error(); err != nil {
 			log.Println("problems with flush: ", err)
 		}
-		close(count)
 		destination.Close()
 	}()
 	return count
